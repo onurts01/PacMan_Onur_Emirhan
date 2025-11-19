@@ -5,3 +5,4 @@ public interface GameGrid<T extends GameObject> {
     int getCols();
     int getRows();
 }
+//interface
