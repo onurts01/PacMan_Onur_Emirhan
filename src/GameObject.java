@@ -1,19 +1,31 @@
 import java.awt.Graphics;
 
 public abstract class GameObject {
-    protected int x, y;
+
+    // direkter Zugriff durch protected
+    protected int x;
+    protected int y;
 
     public GameObject(int x, int y) {
         this.x = x;
         this.y = y;
     }
 
+    // Logik
     public abstract void update();
+
+    // Grafik
     public abstract void render(Graphics g);
 
-    // Synchronized ist gut für Threads!
-    public synchronized int getX() { return x; }
-    public synchronized int getY() { return y; }
+    // Positionsabfragen
+    public synchronized int getX() {
+        return x;
+    }
+
+    public synchronized int getY() {
+        return y;
+    }
+
     public synchronized void setPosition(int x, int y) {
         this.x = x;
         this.y = y;
