@@ -54,8 +54,7 @@ public class App {
 
         // später GameLoop starten
 
-        GameGrid<GameObject> testGrid = new MockGrid(); // Das Dummy-Grid nutzen
-        Ghost meinGeist = new Ghost(1, 1, testGrid);    // Dem Geist das Dummy-Grid geben
+        Thread meinGeist = new Thread();
         meinGeist.start();
     }
 }

@@ -1,7 +1,7 @@
-
-public class Grid<T extends GameObject> implements GameGrid<T> {
+// Auch hier: "extends GameObject" wegnehmen!
+public class Grid<T> implements GameGrid<T> {
     private final int rows, cols;
-    private final Object[][] cells;
+    private final Object[][] cells; // Hier speichern wir die Objekte
 
     public Grid(int rows, int cols) {
         this.rows = rows;
@@ -11,17 +11,17 @@ public class Grid<T extends GameObject> implements GameGrid<T> {
 
     @Override
     public void set(int x, int y, T value) {
-        cells[x][y] = value;
+        if (inBounds(x, y)) {
+            cells[x][y] = value;
+        }
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public T get(int x, int y) {
+        if (!inBounds(x, y)) return null;
         return (T) cells[x][y];
     }
-
-    public int getRows() { return rows; }
-    public int getCols() { return cols; }
 
     @Override
     public int getWidth() { return cols; }
@@ -29,27 +29,30 @@ public class Grid<T extends GameObject> implements GameGrid<T> {
     @Override
     public int getHeight() { return rows; }
 
+    public int getRows() { return rows; }
+    public int getCols() { return cols; }
+
     @Override
     public boolean isWalkable(int x, int y) {
-        if (!inBounds(x, y)) {
-            return false;
-        }
-        T obj = get(x, y);
-        if (obj == null) {
-            return true;
-        }
-        // If the object is a Field, check if it's passable
+        if (!inBounds(x, y)) return false;
+
+        Object obj = cells[x][y];
+
+        // Wenn das Grid "Fields" enthält (was dein LevelLoader macht):
         if (obj instanceof Field) {
-            return ((Field) obj).isPassable();
+            Field f = (Field) obj;
+            // Ein Feld ist begehbar, wenn es 'passable' ist UND keine Wand enthält
+            boolean isWall = (f.getContent() instanceof Wall);
+            return f.isPassable() && !isWall;
         }
-        // If it's a Wall, it's not walkable
-        if (obj instanceof Wall) {
-            return false;
-        }
+
+        // Fallback, falls wir doch mal direkt GameObjects speichern
+        if (obj instanceof Wall) return false;
+
         return true;
     }
 
-    public boolean inBounds(int x, int y) {
+    private boolean inBounds(int x, int y) {
         return x >= 0 && y >= 0 && x < rows && y < cols;
     }
 }

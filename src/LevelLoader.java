@@ -52,7 +52,10 @@ public class LevelLoader {
                         break;
 
                     case 'G':
-                        Ghost g = new Ghost(r, c, (GameGrid<GameObject>) grid);
+                        // Das Grid ist ja schon ein Grid<Field>, genau das braucht der Geist jetzt!
+                        // Kein (GameGrid<GameObject>) Cast nötiger.
+                        Ghost g = new Ghost(r, c, grid);
+
                         f.setContent(g);
                         em.add(g);
                         em.addGhost(g);

@@ -2,114 +2,88 @@ import java.awt.Graphics;
 import java.awt.Color;
 import java.util.Random;
 
-// Erbt von GameObject (Basis) und implementiert Runnable (für den Thread)
 public class Ghost extends GameObject implements Runnable {
 
+    private Color color = null;
     private Thread myThread;
-    private final GameGrid<GameObject> grid; // Referenz auf das Spielfeld
+    // WICHTIG: Der Geist läuft auf einem Grid aus "Field"
+    private final GameGrid<Field> grid;
     private boolean running = false;
     private final Random random;
 
-    // Konstruktor
-    public Ghost(int x, int y, GameGrid<GameObject> grid) {
+    // Konstruktor anpassen: Er nimmt jetzt GameGrid<Field> entgegen
+    public Ghost(int x, int y, GameGrid<Field> grid) {
         super(x, y);
         this.grid = grid;
         this.random = new Random();
+        start(); // Thread direkt starten, damit er losläuft
     }
 
-    // Startet den Thread sicher
+
     public void start() {
         if (myThread == null || !myThread.isAlive()) {
             running = true;
-            myThread = new Thread(this); // "this" ist dieser Geist (Runnable)
-            myThread.start(); // Ruft automatisch die run()-Methode auf
+            myThread = new Thread(this);
+            myThread.start();
         }
     }
 
-    // Stoppt den Thread sauber (wichtig beim Beenden des Spiels)
     public void stop() {
         running = false;
     }
 
     @Override
     public void run() {
-        System.out.println("Geist-Thread gestartet!");
-
         while (running) {
             try {
+                Thread.sleep(500); // Geschwindigkeit
                 makeRandomMove();
-                int speed = 500;
-                Thread.sleep(speed);
             } catch (InterruptedException e) {
-                // Restore interrupt status and exit gracefully
                 Thread.currentThread().interrupt();
                 break;
             }
         }
-        System.out.println("Geist-Thread beendet.");
     }
 
-    // Eine einfache KI: Zufällige Bewegung
     private void makeRandomMove() {
-        int direction = random.nextInt(4); // 0=Hoch, 1=Rechts, 2=Runter, 3=Links
+        int direction = random.nextInt(4);
         int newX = this.x;
         int newY = this.y;
 
         switch (direction) {
-            case 0:
-                newY--;
-                break; // Hoch
-            case 1:
-                newX++;
-                break; // Rechts
-            case 2:
-                newY++;
-                break; // Runter
-            case 3:
-                newX--;
-                break; // Links
+            case 0: newY--; break; // Hoch (y wird kleiner)
+            case 1: newX++; break; // Rechts
+            case 2: newY++; break; // Runter
+            case 3: newX--; break; // Links
         }
 
-        // --- WICHTIG: Kollisionsprüfung ---
-        // Wir fragen das Grid: "Ist das Feld (newX, newY) begehbar?"
-        if (grid.isWalkable(newX, newY)) {
-            // Wenn ja: Position aktualisieren (Thread-safe durch synchronized in GameObject)
+        // Prüfen ob begehbar
+        if (grid.isWalkable(newY, newX)) { // Achtung: Grid ist oft grid[row][col] -> grid[y][x]
+            // Bewegen
             this.setPosition(newX, newY);
-
-            // Nur für dich zum Testen in der Konsole:
-            System.out.println("Geist bewegt sich nach: [" + x + "|" + y + "]");
-        } else {
-            System.out.println("Geist ist gegen eine Wand gelaufen bei: [" + newX + "|" + newY + "]");
+            System.out.println("Geist auf: " + newX + "|" + newY);
         }
     }
 
-    // Logik update (wird hier eigentlich nicht gebraucht, da der Thread alles macht,
-    // aber muss wegen GameObject implementiert werden)
     @Override
-    public void update() {
-        // Leer lassen oder für Animationen nutzen
-    }
+    public void update() { }
 
     @Override
     public void render(Graphics g) {
-        // Einfacher roter Kasten als Platzhalter für die GUI später
-        g.setColor(Color.RED);
+        g.setColor(Color.CYAN); // Geist Farbe
         g.fillRect(x * 20, y * 20, 20, 20);
     }
 
     @Override
     public void draw(Graphics g, int x, int y, int size) {
-
+        render(g); // Weiterleitung, damit LevelLoader/GamePanel es zeichnen kann
     }
 
-    // --- MAIN METHODE ZUM TESTEN (NUR FÜR DICH) ---
-    public static void main(String[] args) {
-        // 1. Dummy Grid erstellen (Das hast du vorhin gespeichert)
-        GameGrid<GameObject> testGrid = new MockGrid();
+    public Color getColor() {
+        return color;
+    }
 
-        // 2. Geist erstellen auf Position 5,5
-        Ghost g = new Ghost(5, 5, testGrid);
-
-        // 3. Thread starten
+    public void setColor(Color color) {
+        this.color = color;
     }
 }
