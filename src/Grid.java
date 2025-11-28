@@ -10,17 +10,17 @@ public class Grid<T> implements GameGrid<T> {
     }
 
     @Override
-    public void set(int x, int y, T value) {
-        if (inBounds(x, y)) {
-            cells[x][y] = value;
+    public void set(int row, int col, T value) {
+        if (inBounds(row, col)) {
+            cells[row][col] = value;
         }
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public T get(int x, int y) {
-        if (!inBounds(x, y)) return null;
-        return (T) cells[x][y];
+    public T get(int row, int col) {
+        if (!inBounds(row, col)) return null;
+        return (T) cells[row][col];
     }
 
     @Override
@@ -33,10 +33,10 @@ public class Grid<T> implements GameGrid<T> {
     public int getCols() { return cols; }
 
     @Override
-    public boolean isWalkable(int x, int y) {
-        if (!inBounds(x, y)) return false;
+    public boolean isWalkable(int row, int col) {
+        if (!inBounds(row, col)) return false;
 
-        Object obj = cells[x][y];
+        Object obj = cells[row][col];
 
         // Wenn das Grid "Fields" enthält (was dein LevelLoader macht):
         if (obj instanceof Field) {
@@ -52,7 +52,7 @@ public class Grid<T> implements GameGrid<T> {
         return true;
     }
 
-    private boolean inBounds(int x, int y) {
-        return x >= 0 && y >= 0 && x < rows && y < cols;
+    private boolean inBounds(int row, int col) {
+        return row >= 0 && col >= 0 && row < rows && col < cols;
     }
 }

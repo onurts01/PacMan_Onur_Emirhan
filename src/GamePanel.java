@@ -28,8 +28,7 @@ public class GamePanel extends JPanel {
                 int x = c * tileSize;
                 int y = r * tileSize;
 
-            
-                
+
                 // Boden
                 g.setColor(Color.BLACK);
                 g.fillRect(x, y, tileSize, tileSize);

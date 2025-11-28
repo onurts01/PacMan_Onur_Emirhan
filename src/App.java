@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.io.IOException;
 
 public class App {
@@ -21,23 +22,44 @@ public class App {
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-        frame.setVisible(true); // Das hast du schon
 
-        gamePanel.requestFocusInWindow(); // <--- NEU: Zwingt den Fokus auf das Spiel
+        // KEY BINDINGS statt KeyListener (funktioniert auf macOS!)
+        InputMap inputMap = gamePanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = gamePanel.getActionMap();
 
-        // ... hier kommt dein KeyListener ...
-        // 1. INPUT (Steuerung)
-        frame.addKeyListener(new java.awt.event.KeyAdapter() {
+        // Links
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "left");
+        actionMap.put("left", new AbstractAction() {
             @Override
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                Player p = em.getPlayer();
-                if (p != null) {
-                    int key = e.getKeyCode();
-                    if (key == 37) p.tryMove(-1, 0); // Links
-                    if (key == 38) p.tryMove(0, -1); // Hoch
-                    if (key == 39) p.tryMove(1, 0);  // Rechts
-                    if (key == 40) p.tryMove(0, 1);  // Runter
-                }
+            public void actionPerformed(ActionEvent e) {
+                if (em.getPlayer() != null) em.getPlayer().tryMove(-1, 0);
+            }
+        });
+
+        // Rechts
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "right");
+        actionMap.put("right", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (em.getPlayer() != null) em.getPlayer().tryMove(1, 0);
+            }
+        });
+
+        // Hoch
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), "up");
+        actionMap.put("up", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (em.getPlayer() != null) em.getPlayer().tryMove(0, -1);
+            }
+        });
+
+        // Runter
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), "down");
+        actionMap.put("down", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (em.getPlayer() != null) em.getPlayer().tryMove(0, 1);
             }
         });
 
