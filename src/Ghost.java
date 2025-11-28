@@ -104,20 +104,35 @@ public class Ghost extends GameObject implements Runnable {
         }
     }
 
-    private void moveTo(int newX, int newY) {
-        grid.get(this.y, this.x).setContent(null);
-        this.setPosition(newX, newY);
-        grid.get(this.y, this.x).setContent(this);
+    private void makeRandomMove() {
     }
 
-    private void makeRandomMove() {
-        // ... (Deine alte Zufallslogik als Fallback) ...
-        // Kopiere hier einfach die Logik von vorhin rein oder lass ihn stehenbleiben
-        // Fallback: Zufall
-        int dir = random.nextInt(4);
-        int dx=0, dy=0;
-        if(dir==0) dy=-1; else if(dir==1) dx=1; else if(dir==2) dy=1; else dx=-1;
-        if (grid.isWalkable(this.y+dy, this.x+dx)) moveTo(this.x+dx, this.y+dy);
+    // Hilfsmethode für sicheres Bewegen
+    private void moveTo(int targetX, int targetY) {
+
+        // Wir sperren das Grid für diesen Moment.
+        // Niemand sonst darf schreiben, während wir prüfen und ziehen.
+        synchronized (grid) {
+
+            // 1. Check: Ist das Ziel überhaupt noch begehbar? (Vielleicht hat sich gerade eine Wand dorthin bewegt?)
+            if (!grid.isWalkable(targetY, targetX)) return;
+
+            // 2. Check: Steht da schon ein Kollege? (Anti-Kannibalismus)
+            Field targetField = grid.get(targetY, targetX); // y=row, x=col
+            if (targetField.getContent() instanceof Ghost) {
+                return; // Da ist schon wer, wir bleiben stehen.
+            }
+
+            // 3. Das eigentliche Bewegen
+            // Alten Platz leeren
+            grid.get(this.y, this.x).setContent(null);
+
+            // Koordinaten im Objekt ändern
+            this.setPosition(targetX, targetY);
+
+            // Neuen Platz besetzen
+            targetField.setContent(this);
+        }
     }
 
     @Override

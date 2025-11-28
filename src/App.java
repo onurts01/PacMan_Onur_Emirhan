@@ -21,7 +21,11 @@ public class App {
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+        frame.setVisible(true); // Das hast du schon
 
+        gamePanel.requestFocusInWindow(); // <--- NEU: Zwingt den Fokus auf das Spiel
+
+        // ... hier kommt dein KeyListener ...
         // 1. INPUT (Steuerung)
         frame.addKeyListener(new java.awt.event.KeyAdapter() {
             @Override
