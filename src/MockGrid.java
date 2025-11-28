@@ -15,8 +15,7 @@ public class MockGrid implements GameGrid<GameObject> {
     public boolean isWalkable(int x, int y) {
         // Wir tun so, als wäre das Spielfeld unendlich groß und leer
         // Nur zum Testen: Alles größer als 20 ist eine "Wand"
-        if (x > 20 || x < 0 || y > 20 || y < 0) return false;
-        return true;
+        return x <= 20 && x >= 0 && y <= 20 && y >= 0;
     }
 
     @Override

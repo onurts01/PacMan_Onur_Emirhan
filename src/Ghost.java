@@ -6,10 +6,9 @@ import java.util.Random;
 public class Ghost extends GameObject implements Runnable {
 
     private Thread myThread;
-    private GameGrid<GameObject> grid; // Referenz auf das Spielfeld
+    private final GameGrid<GameObject> grid; // Referenz auf das Spielfeld
     private boolean running = false;
-    private int speed = 500; // Wartezeit in Millisekunden (je kleiner, desto schneller)
-    private Random random;
+    private final Random random;
 
     // Konstruktor
     public Ghost(int x, int y, GameGrid<GameObject> grid) {
@@ -38,14 +37,13 @@ public class Ghost extends GameObject implements Runnable {
 
         while (running) {
             try {
-                // 1. Bewegung berechnen
                 makeRandomMove();
-
-                // 2. Warten (Geschwindigkeit simulieren)
+                int speed = 500;
                 Thread.sleep(speed);
-
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                // Restore interrupt status and exit gracefully
+                Thread.currentThread().interrupt();
+                break;
             }
         }
         System.out.println("Geist-Thread beendet.");
