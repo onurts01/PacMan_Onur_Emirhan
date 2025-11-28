@@ -1,5 +1,5 @@
 import javax.swing.*;
-import java.awt.*;      // <-- für BorderLayout, Color, etc.
+import java.awt.*;
 import java.io.IOException;
 
 public class App {
@@ -10,51 +10,40 @@ public class App {
 
         GamePanel gamePanel = new GamePanel(grid, em);
 
-        // ===== HUD erstellen (Score / Highscore / Lives + Checkboxes) =====
-        JPanel hud = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        hud.setBackground(Color.BLACK);
-
-        JLabel scoreLabel = new JLabel("Score: 0");
-        JLabel highscoreLabel = new JLabel("Highscore: 0");
-        JLabel livesLabel = new JLabel("Lives: 3");
-
-        // Schriftfarbe weiß, damit man es auf Schwarz sieht
-        scoreLabel.setForeground(Color.WHITE);
-        highscoreLabel.setForeground(Color.WHITE);
-        livesLabel.setForeground(Color.WHITE);
-
-        JCheckBox invincibleBox = new JCheckBox("Invincible");
-        JCheckBox debugBox = new JCheckBox("Debug");
-
-        invincibleBox.setForeground(Color.WHITE);
-        debugBox.setForeground(Color.WHITE);
-        invincibleBox.setBackground(Color.BLACK);
-        debugBox.setBackground(Color.BLACK);
-
-        hud.add(scoreLabel);
-        hud.add(Box.createHorizontalStrut(20));
-        hud.add(highscoreLabel);
-        hud.add(Box.createHorizontalStrut(20));
-        hud.add(livesLabel);
-        hud.add(Box.createHorizontalStrut(40));
-        hud.add(invincibleBox);
-        hud.add(debugBox);
-
-        // ===== Frame aufbauen =====
+        // Frame Setup
         JFrame frame = new JFrame("PacMan - simplified");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new BorderLayout());      // wichtig fürs HUD!
+        frame.setLayout(new BorderLayout());
 
-        frame.add(hud, BorderLayout.NORTH);       // HUD oben
-        frame.add(gamePanel, BorderLayout.CENTER); // Spielfeld darunter
+        // HUD (Optional, hier vereinfacht weggelassen oder aus deinem Code kopieren)
+        frame.add(gamePanel, BorderLayout.CENTER);
 
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
-        // später GameLoop starten
+        // 1. INPUT (Steuerung)
+        frame.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                Player p = em.getPlayer();
+                if (p != null) {
+                    int key = e.getKeyCode();
+                    if (key == 37) p.tryMove(-1, 0); // Links
+                    if (key == 38) p.tryMove(0, -1); // Hoch
+                    if (key == 39) p.tryMove(1, 0);  // Rechts
+                    if (key == 40) p.tryMove(0, 1);  // Runter
+                }
+            }
+        });
 
-        Thread meinGeist = new Thread();
-        meinGeist.start();
+        // 2. GEISTER STARTEN
+        for (Ghost g : em.getGhosts()) {
+            g.start();
+        }
+
+        // 3. GAME LOOP (Zeichnen)
+        Timer timer = new Timer(40, e -> gamePanel.repaint());
+        timer.start();
     }
 }
