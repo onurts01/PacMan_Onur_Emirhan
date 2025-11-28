@@ -97,6 +97,11 @@ public class Ghost extends GameObject implements Runnable {
         g.fillRect(x * 20, y * 20, 20, 20);
     }
 
+    @Override
+    public void draw(Graphics g, int x, int y, int size) {
+
+    }
+
     // --- MAIN METHODE ZUM TESTEN (NUR FÜR DICH) ---
     public static void main(String[] args) {
         // 1. Dummy Grid erstellen (Das hast du vorhin gespeichert)
