@@ -12,11 +12,10 @@ public class App {
         GamePanel gamePanel = new GamePanel(grid, em);
 
         // Frame Setup
-        JFrame frame = new JFrame("PacMan - simplified");
+        JFrame frame = new JFrame("PacMan");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
-        // HUD (Optional, hier vereinfacht weggelassen oder aus deinem Code kopieren)
         frame.add(gamePanel, BorderLayout.CENTER);
 
         frame.pack();
