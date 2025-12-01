@@ -9,9 +9,29 @@ public class Ghost extends GameObject implements Runnable {
     private boolean running = false;
     private Random random = new Random();
 
+    // Startposition merken für Reset
+    private int startX, startY;
+
     public Ghost(int x, int y, GameGrid<Field> grid) {
         super(x, y);
         this.grid = grid;
+        this.startX = x;
+        this.startY = y;
+    }
+
+    // --- NEU: Geist nach Hause schicken (wenn gefressen) ---
+    public void resetPosition() {
+        synchronized(grid) {
+            // Alten Platz leeren
+            grid.get(this.y, this.x).setContent(null);
+
+            // Koordinaten zurücksetzen
+            this.x = startX;
+            this.y = startY;
+
+            // Auf Startplatz setzen
+            grid.get(this.y, this.x).setContent(this);
+        }
     }
 
     public void start() {
@@ -26,25 +46,23 @@ public class Ghost extends GameObject implements Runnable {
     public void run() {
         while (running) {
             try {
-                // 1. AMEISEN LOSSCHICKEN
+                // Hier rufen wir die SCHLAUE Bewegung auf
                 makeSmartMove();
 
-                // 2. Warten
-                Thread.sleep(600); // Etwas langsamer, damit man es sieht
+                // Geschwindigkeit
+                Thread.sleep(600);
             } catch (InterruptedException e) {
                 break;
             }
         }
     }
 
+    // --- Die wiederhergestellte KI-Logik (Ameisen) ---
     private void makeSmartMove() {
         // 1. Ziel finden (Den Spieler)
-        // Wir suchen einfach im Grid nach dem Player objekt.
-        // (Effizienter wäre, wenn EntityManager uns das sagt, aber so geht's auch)
         int targetX = -1, targetY = -1;
 
-        // Simpel: Wir suchen den Spieler im Grid
-        // Achtung: Teure Operation, aber bei 20x20 ok.
+        // Wir suchen den Spieler im Grid
         for(int r=0; r<grid.getHeight(); r++) {
             for(int c=0; c<grid.getWidth(); c++) {
                 if (grid.get(r,c).getContent() instanceof Player) {
@@ -54,27 +72,22 @@ public class Ghost extends GameObject implements Runnable {
             }
         }
 
+        // Falls kein Spieler da ist (z.B. gerade tot), zufällig bewegen
         if (targetX == -1) {
-            makeRandomMove(); // Kein Spieler gefunden -> Zufall
+            makeRandomMove();
             return;
         }
 
-        // 2. Ameisen Gedächtnis bauen
+        // 2. Ameisen-Gedächtnis bauen
         int[][] memory = new int[grid.getHeight()][grid.getWidth()];
 
-        // Player Position als Ziel markieren (oder Start? Aufgabe sagt:
-        // "kürzesten Weg zum Spieler... Startfeld des Geistes erzeugt Ameise")
-        // Wir starten beim GEIST und fluten das Grid.
-        // Das Feld mit dem Spieler hat am Ende eine Zahl (z.B. 15).
-        // Um den Player zu fangen, müssen wir aber wissen, welcher NACHBAR die kleinste Distanz ZUM PLAYER hat.
-        // TRICK: Wir starten die Ameisen BEIM SPIELER!
-        // Dann steht beim Geist z.B. eine 10. Sein Nachbar hat eine 9. Er geht zur 9.
-
+        // Wir starten die "Flutung" beim SPIELER.
+        // So wissen wir bei jedem Feld, wie weit es zum Spieler ist.
         Ant queen = new Ant(targetX, targetY, 1, grid, memory);
         Thread t = new Thread(queen);
         t.start();
         try {
-            t.join(); // Warten bis fertig geflutet
+            t.join(); // Warten bis die Ameisen fertig sind
         } catch(InterruptedException e) {}
 
         // 3. Den besten Nachbarn suchen (Der mit der kleinsten Zahl > 0)
@@ -82,12 +95,16 @@ public class Ghost extends GameObject implements Runnable {
         int minSteps = Integer.MAX_VALUE;
 
         int[][] dirs = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
+
+        // Wir prüfen alle 4 Nachbarn vom GEIST
         for (int[] dir : dirs) {
             int nx = this.x + dir[0];
             int ny = this.y + dir[1];
 
             if (grid.isWalkable(ny, nx)) {
                 int val = memory[ny][nx]; // Wie weit ist es von hier zum Spieler?
+
+                // Wir suchen die KLEINSTE Distanz (val > 0)
                 if (val > 0 && val < minSteps) {
                     minSteps = val;
                     bestX = nx;
@@ -100,38 +117,32 @@ public class Ghost extends GameObject implements Runnable {
         if (bestX != -1) {
             moveTo(bestX, bestY);
         } else {
-            makeRandomMove(); // Sackgasse oder Fehler
+            makeRandomMove(); // Fallback
         }
     }
 
+    // Fallback, falls der Weg blockiert ist
     private void makeRandomMove() {
+        int dir = random.nextInt(4);
+        int dx=0, dy=0;
+        if(dir==0) dy=-1; else if(dir==1) dx=1; else if(dir==2) dy=1; else dx=-1;
+        moveTo(this.x+dx, this.y+dy);
     }
 
-    // Hilfsmethode für sicheres Bewegen
+    // Sicheres Bewegen mit Kollisionsschutz
     private void moveTo(int targetX, int targetY) {
-
-        // Wir sperren das Grid für diesen Moment.
-        // Niemand sonst darf schreiben, während wir prüfen und ziehen.
         synchronized (grid) {
-
-            // 1. Check: Ist das Ziel überhaupt noch begehbar? (Vielleicht hat sich gerade eine Wand dorthin bewegt?)
+            // Check 1: Ist das Ziel begehbar?
             if (!grid.isWalkable(targetY, targetX)) return;
 
-            // 2. Check: Steht da schon ein Kollege? (Anti-Kannibalismus)
-            Field targetField = grid.get(targetY, targetX); // y=row, x=col
-            if (targetField.getContent() instanceof Ghost) {
-                return; // Da ist schon wer, wir bleiben stehen.
-            }
+            // Check 2: Steht da schon ein anderer Geist?
+            Field targetField = grid.get(targetY, targetX);
+            if (targetField.getContent() instanceof Ghost) return;
 
-            // 3. Das eigentliche Bewegen
-            // Alten Platz leeren
-            grid.get(this.y, this.x).setContent(null);
-
-            // Koordinaten im Objekt ändern
-            this.setPosition(targetX, targetY);
-
-            // Neuen Platz besetzen
-            targetField.setContent(this);
+            // Bewegen
+            grid.get(this.y, this.x).setContent(null); // Alten Platz leeren
+            this.setPosition(targetX, targetY);        // Koordinaten ändern
+            targetField.setContent(this);              // Neuen Platz füllen
         }
     }
 
@@ -139,7 +150,7 @@ public class Ghost extends GameObject implements Runnable {
     public void update() {}
 
     @Override
-    public void render(Graphics g) {} // Wird nicht genutzt, draw wird genutzt
+    public void render(Graphics g) {}
 
     @Override
     public void draw(Graphics g, int x, int y, int size) {
