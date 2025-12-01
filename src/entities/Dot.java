@@ -1,7 +1,9 @@
+package entities;
+
 import java.awt.*;
 
-public class Wall extends GameObject {
-    public Wall(int row, int col) {
+public class Dot extends GameObject {
+    public Dot(int row, int col) {
         super(row, col);
     }
 
@@ -17,7 +19,8 @@ public class Wall extends GameObject {
 
     @Override
     public void draw(Graphics g, int x, int y, int size) {
-        g.setColor(Color.DARK_GRAY);
-        g.fillRect(x, y, size, size);
+        g.setColor(Color.RED);
+        int d = size / 3;
+        g.fillOval(x + d, y + d, d, d);
     }
 }

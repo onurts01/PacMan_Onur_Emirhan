@@ -1,3 +1,8 @@
+package world;
+
+import entities.*;
+import logic.EntityManager;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
@@ -19,7 +24,7 @@ public class LevelLoader {
                 char ch = (c < line.length()) ? line.charAt(c) : ' ';
                 Field f = new Field(r, c);
 
-                // WICHTIG: Bei GameObject ist x=Spalte (c) und y=Zeile (r)
+                // WICHTIG: Bei entities.GameObject ist x=Spalte (c) und y=Zeile (r)
                 // Wir übergeben also (c, r) statt (r, c)!
 
                 switch (ch) {
@@ -43,7 +48,7 @@ public class LevelLoader {
                         break;
 
                     case 'P':
-                        // Player braucht das Grid für Kollisionen!
+                        // entities.Player braucht das world.Grid für Kollisionen!
                         Player pl = new Player(c, r, grid);
                         f.setContent(pl);
                         em.setPlayer(pl);

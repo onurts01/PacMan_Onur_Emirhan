@@ -1,3 +1,9 @@
+package ui;
+
+import logic.EntityManager;
+import world.Field;
+import world.Grid;
+
 import javax.swing.*;
 import java.awt.*;
 

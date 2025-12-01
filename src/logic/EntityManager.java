@@ -1,3 +1,9 @@
+package logic;
+
+import entities.GameObject;
+import entities.Ghost;
+import entities.Player;
+
 import java.util.*;
 
 public class EntityManager {

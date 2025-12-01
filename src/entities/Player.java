@@ -1,3 +1,9 @@
+package entities;
+
+import logic.InvalidMoveException;
+import world.Field;
+import world.GameGrid;
+
 import java.awt.*;
 
 public class Player extends GameObject {
@@ -13,7 +19,6 @@ public class Player extends GameObject {
     private int lives = 3;
     private int startX, startY;
 
-    // PowerUp Status
     private boolean isPoweredUp = false;
     private long powerUpEndTime = 0;
 
@@ -33,7 +38,7 @@ public class Player extends GameObject {
     public void update() {
         if (isPoweredUp && System.currentTimeMillis() > powerUpEndTime) {
             isPoweredUp = false;
-            System.out.println("PowerUp abgelaufen!");
+            System.out.println("entities.PowerUp abgelaufen!");
         }
 
         if (System.currentTimeMillis() - lastMoveTime > moveDelay) {
@@ -48,44 +53,30 @@ public class Player extends GameObject {
         int newX = this.x + dx;
         int newY = this.y + dy;
 
-        // Wir prüfen erst, ob wir uns bewegen dürfen
-        if (grid.isWalkable(newY, newX)) {
+        try {
+            // 1. Exception-Check: Ist das eine Wand?
+            if (!grid.isWalkable(newY, newX)) {
+                // Wenn wir hier werfen, springt er sofort zum catch-Block unten
+                // und führt KEINE Bewegung aus.
+                throw new InvalidMoveException("Wand!");
+            }
+
             Field nextField = grid.get(newY, newX);
             GameObject content = nextField.getContent();
 
-            try {
-                // Check: Wenn Wand -> Exception werfen!
-                if (!grid.isWalkable(newY, newX)) {
-                    throw new InvalidMoveException("Aua! Das ist eine Wand.");
-                }
-
-
-            // --- TELEPORTER LOGIC START ---
+            // 2. entities.Teleporter Logik
             if (content instanceof Teleporter) {
-                // Wir laufen in einen Teleporter!
-                // Statt das Teleporter-Objekt zu "fressen" (überschreiben),
-                // springen wir direkt auf die ANDERE Seite des Spielfelds.
-
                 if (newX == 0) {
-                    // Wir sind links reingelaufen -> Beamen nach Rechts
-                    // (Breite - 2, damit wir NEBEN dem rechten Teleporter rauskommen)
                     newX = grid.getWidth() - 2;
                 } else {
-                    // Wir sind rechts reingelaufen -> Beamen nach Links
-                    // (Spalte 1, damit wir NEBEN dem linken Teleporter rauskommen)
                     newX = 1;
                 }
-
-
-                // Jetzt müssen wir das NEUE Zielfeld laden, weil sich newX geändert hat
+                // Nach Teleport müssen wir das neue Zielfeld holen
                 nextField = grid.get(newY, newX);
                 content = nextField.getContent();
-                System.out.println("Teleportiert zu: " + newX + "|" + newY);
             }
 
-            // --- TELEPORTER LOGIC END ---
-
-            // Punkte essen (am neuen Ort)
+            // 3. Punkte essen
             if (content instanceof Dot) {
                 score += 10;
             } else if (content instanceof PowerUp) {
@@ -93,21 +84,15 @@ public class Player extends GameObject {
                 activatePowerUp();
             }
 
-            // Die eigentliche Bewegung im Grid
+            // 4. Bewegung ausführen
             grid.get(this.y, this.x).setContent(null); // Alten Platz leeren
             this.x = newX;
             this.y = newY;
             nextField.setContent(this);   // Neuen Platz besetzen
 
-            grid.get(this.y, this.x).setContent(null);
-            this.x = newX;
-            this.y = newY;
-            nextField.setContent(this);
-
         } catch (InvalidMoveException e) {
-            // Exception fangen (Punkte für Aufgabe gesichert!)
-            System.out.println(e.getMessage());
-
+            // Wir fangen den Fehler ab und tun nichts (Pacman bleibt einfach stehen)
+            // System.out.println(e.getMessage()); // Optional: Konsolenausgabe
         }
     }
 

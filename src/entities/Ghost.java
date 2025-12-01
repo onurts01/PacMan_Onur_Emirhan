@@ -1,3 +1,10 @@
+package entities;
+
+import logic.Ant;
+import world.Field;
+import world.GameGrid;
+import world.Grid;
+
 import java.awt.Graphics;
 import java.awt.Color;
 import java.util.Random;
@@ -12,7 +19,7 @@ public class Ghost extends GameObject implements Runnable {
     // Startposition merken für Reset
     private int startX, startY;
 
-    public Ghost(int x, int y, GameGrid<Field> grid) {
+    public Ghost(int x, int y, Grid<Field> grid) {
         super(x, y);
         this.grid = grid;
         this.startX = x;
@@ -62,7 +69,7 @@ public class Ghost extends GameObject implements Runnable {
         // 1. Ziel finden (Den Spieler)
         int targetX = -1, targetY = -1;
 
-        // Wir suchen den Spieler im Grid
+        // Wir suchen den Spieler im world.Grid
         for(int r=0; r<grid.getHeight(); r++) {
             for(int c=0; c<grid.getWidth(); c++) {
                 if (grid.get(r,c).getContent() instanceof Player) {

@@ -1,3 +1,8 @@
+package logic;
+
+import world.Field;
+import world.GameGrid;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +23,7 @@ public class Ant implements Runnable {
     public void run() {
         // 1. Nachbarn prüfen (Oben, Rechts, Unten, Links)
         // int[][] directions = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}}; // dx, dy
-        // ACHTUNG: In deinem Grid ist y=Zeile(r), x=Spalte(c).
+        // ACHTUNG: In deinem world.Grid ist y=Zeile(r), x=Spalte(c).
         // Wir probieren alle 4 Richtungen.
         int[][] directions = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
 

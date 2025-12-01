@@ -1,7 +1,7 @@
-// <T extends GameObject> garantiert, dass wir nur Spielobjekte ins Gitter packen
+package world;// <T extends entities.GameObject> garantiert, dass wir nur Spielobjekte ins Gitter packen
 // und keine Strings oder Integers. Das gibt Punkte für Generics!
 
-// Wir entfernen "extends GameObject", damit auch "Field" erlaubt ist.
+// Wir entfernen "extends entities.GameObject", damit auch "world.Field" erlaubt ist.
 public interface GameGrid<T> {
 
     T get(int x, int y);

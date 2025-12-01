@@ -1,135 +1,142 @@
+import entities.Ghost;
+import entities.Player;
+import logic.EntityManager;
+import ui.GamePanel;
+import world.Field;
+import world.Grid;
+import world.LevelLoader;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
 
+/**
+ * Die Hauptklasse der Anwendung (Controller).
+ * Hier laufen alle Fäden zusammen: GUI-Setup, Thread-Start und der Game-Loop.
+ */
 public class App {
     public static void main(String[] args) throws IOException {
 
+        // --- 1. INITIALISIERUNG (Datenmodell & View) ---
         EntityManager em = new EntityManager();
+        // LevelLoader nutzt Generics: Grid<Field> (Anforderung 3: Generics)
         Grid<Field> grid = LevelLoader.load("src/level1.txt", em);
         GamePanel gamePanel = new GamePanel(grid, em);
 
-        // Vor dem Timer
+        // --- 2. SERIALISIERUNG (Anforderung 4) ---
+        // Lädt den gespeicherten Highscore beim Start von der Festplatte.
         int currentHighscore = loadHighscore();
-        JLabel highscoreLabel = new JLabel("Highscore: " + currentHighscore);
-// ... Rest vom HUD ...
 
-        if (p.getLives() <= 0) {
-            ((Timer)e.getSource()).stop();
-
-            // NEU: Highscore speichern, wenn er besser ist
-            if (p.getScore() > loadHighscore()) {
-                saveHighscore(p.getScore());
-            }
-
-            JOptionPane.showMessageDialog(frame, "GAME OVER! Score: " + p.getScore());
-            System.exit(0);
-        }
-
-        // 1. HUD (Head-Up Display) erstellen
+        // --- 3. GUI SETUP (Anforderung 7: Swing) ---
         JPanel hudPanel = new JPanel();
         hudPanel.setBackground(Color.BLACK);
-        hudPanel.setLayout(new GridLayout(1, 3)); // 3 Bereiche nebeneinander
+        hudPanel.setLayout(new GridLayout(1, 4)); // Grid-Layout für saubere Anordnung
 
         JLabel scoreLabel = new JLabel("Score: 0");
         JLabel timeLabel = new JLabel("Time: 0s");
         JLabel livesLabel = new JLabel("Lives: 3");
+        JLabel highscoreLabel = new JLabel("Highscore: " + currentHighscore);
 
-        // Styling (Weißer Text, fett, zentriert)
+        // Styling der Labels
         Font hudFont = new Font("Arial", Font.BOLD, 18);
         styleLabel(scoreLabel, hudFont);
         styleLabel(timeLabel, hudFont);
         styleLabel(livesLabel, hudFont);
+        styleLabel(highscoreLabel, hudFont);
 
         hudPanel.add(scoreLabel);
         hudPanel.add(timeLabel);
         hudPanel.add(livesLabel);
+        hudPanel.add(highscoreLabel);
 
-        // 2. Fenster zusammenbauen
         JFrame frame = new JFrame("PacMan - Student Edition");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
-        frame.add(hudPanel, BorderLayout.NORTH); // HUD ganz oben
+        frame.add(hudPanel, BorderLayout.NORTH);
         frame.add(gamePanel, BorderLayout.CENTER);
 
-        frame.pack();
-        frame.setLocationRelativeTo(null);
+        frame.pack(); // Passt Fenstergröße an Inhalt an
+        frame.setLocationRelativeTo(null); // Zentriert das Fenster
         frame.setVisible(true);
 
-        gamePanel.requestFocusInWindow(); // Wichtig für Tastatur!
-
-        // 3. Steuerung (Key Bindings)
+        // Fokus auf das Panel setzen, damit KeyBindings funktionieren
+        gamePanel.requestFocusInWindow();
         setupInput(gamePanel, em);
 
-        // 4. Geister starten
+        // --- 4. MULTITHREADING START (Anforderung 5.2) ---
+        // Startet für jeden Geist einen eigenen, parallelen Thread.
         for (Ghost g : em.getGhosts()) {
             g.start();
         }
 
-        // 5. Spielstart-Zeit merken
         long startTime = System.currentTimeMillis();
 
-
-        // 6. GAME LOOP (Schiedsrichter & Zeichner)
+        // --- 5. GAME LOOP (Anforderung 5.1) ---
+        // Der Timer sorgt für periodische Updates (alle 40ms = 25 FPS).
+        // Dies trennt die Spielgeschwindigkeit von der Rechenleistung.
         Timer timer = new Timer(40, e -> {
             Player p = em.getPlayer();
 
             if (p != null) {
-                // A) Spieler bewegen & Logik updaten
+                // A) Update: Bewegungslogik des Spielers
                 p.update();
 
-                // B) Kollision mit Geistern prüfen
+                // B) Kollisionsabfrage: Spieler vs. Geister
                 for (Ghost g : em.getGhosts()) {
+                    // Einfache AABB-Kollision (Axis-Aligned Bounding Box) auf Rasterebene
                     if (g.getX() == p.getX() && g.getY() == p.getY()) {
-
-                        // --- NEUE LOGIK ---
                         if (p.isInvincible()) {
-                            // Szenario: Pacman frisst Geist
+                            // Szenario: PowerUp aktiv -> Geist wird gefressen
                             p.addScore(100);
-                            g.resetPosition(); // Geist zurück in den Käfig
-                            System.out.println("Geist gegessen! +100 Punkte");
+                            g.resetPosition();
                         } else {
-                            // Szenario: Geist frisst Pacman
+                            // Szenario: Normal -> Spieler verliert Leben
                             p.loseLife();
                             p.resetPosition();
-                            System.out.println("OUCH! Leben verloren.");
                         }
-                        // ------------------
                     }
                 }
 
-                // C) HUD aktualisieren
+                // C) UI-Updates
                 scoreLabel.setText("Score: " + p.getScore());
                 livesLabel.setText("Lives: " + p.getLives());
-
                 long playedSeconds = (System.currentTimeMillis() - startTime) / 1000;
                 timeLabel.setText("Time: " + playedSeconds + "s");
 
-                // Game Over Check
+                // D) Game Over Logik
                 if (p.getLives() <= 0) {
-                    ((Timer)e.getSource()).stop();
+                    ((Timer)e.getSource()).stop(); // Loop stoppen
+
+                    // Highscore speichern, falls neuer Rekord (Serialisierung)
+                    if (p.getScore() > loadHighscore()) {
+                        saveHighscore(p.getScore());
+                    }
+
                     JOptionPane.showMessageDialog(frame, "GAME OVER! Score: " + p.getScore());
                     System.exit(0);
                 }
             }
+            // Zeichnet das Spielfeld neu (ruft paintComponent auf)
             gamePanel.repaint();
         });
 
         timer.start();
     }
 
+    // --- HILFSMETHODEN ---
 
-
-    // Hilfsmethode für schönes Design
     private static void styleLabel(JLabel label, Font font) {
         label.setForeground(Color.WHITE);
         label.setFont(font);
         label.setHorizontalAlignment(SwingConstants.CENTER);
     }
 
-    // Hilfsmethode für die Tasten (der Übersichtlichkeit halber ausgelagert)
+    /**
+     * Richtet die Tastatursteuerung mittels KeyBindings ein.
+     * KeyBindings sind robuster als KeyListener (Swing Standard).
+     */
     private static void setupInput(JComponent comp, EntityManager em) {
         InputMap im = comp.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap am = comp.getActionMap();
@@ -145,24 +152,27 @@ public class App {
 
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), "down");
         am.put("down", new AbstractAction() { public void actionPerformed(ActionEvent e) { if(em.getPlayer()!=null) em.getPlayer().setDirection(0, 1); }});
-
     }
-    // Speichern
+
+    /**
+     * Speichert den Highscore mittels ObjectOutputStream (Serialisierung).
+     */
     private static void saveHighscore(int score) {
         try (java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(new java.io.FileOutputStream("highscore.dat"))) {
-            out.writeInt(score); // Wir speichern einfach die Zahl
-            System.out.println("Highscore gespeichert: " + score);
+            out.writeInt(score);
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
     }
 
-    // Laden
+    /**
+     * Lädt den Highscore mittels ObjectInputStream (Deserialisierung).
+     */
     private static int loadHighscore() {
         try (java.io.ObjectInputStream in = new java.io.ObjectInputStream(new java.io.FileInputStream("highscore.dat"))) {
             return in.readInt();
         } catch (java.io.IOException e) {
-            return 0; // Kein Highscore vorhanden
+            return 0; // Fallback, falls noch kein Savegame existiert
         }
     }
 }

@@ -1,8 +1,9 @@
+package entities;
+
 import java.awt.*;
 
-public class Teleporter extends GameObject {
-
-    public Teleporter(int row, int col) {
+public class Wall extends GameObject {
+    public Wall(int row, int col) {
         super(row, col);
     }
 
@@ -18,7 +19,7 @@ public class Teleporter extends GameObject {
 
     @Override
     public void draw(Graphics g, int x, int y, int size) {
-        g.setColor(Color.WHITE); 
+        g.setColor(Color.DARK_GRAY);
         g.fillRect(x, y, size, size);
     }
 }

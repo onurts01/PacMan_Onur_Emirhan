@@ -1,3 +1,7 @@
+package world;
+
+import entities.GameObject;
+
 public class Field {
     public final int row, col;
     private boolean passable = true;
