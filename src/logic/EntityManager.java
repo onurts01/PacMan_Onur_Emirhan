@@ -6,8 +6,15 @@ import entities.Player;
 
 import java.util.*;
 
+/**
+ * Verwaltet Listen aller dynamischen Spielobjekte.
+ * Dient als zentrale Anlaufstelle für Kollisionsprüfungen und Updates.
+ */
 public class EntityManager {
+    // Liste aller Objekte (für generische Updates)
     private final List<GameObject> entities = new ArrayList<>();
+
+    // Spezifische Referenzen für schnellen Zugriff
     private Player player;
     private final List<Ghost> ghosts = new ArrayList<>();
 

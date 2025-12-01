@@ -13,6 +13,7 @@ public class LevelLoader {
         List<String> lines = Files.readAllLines(Path.of(path));
 
         int rows = lines.size();
+        // Dynamische Ermittlung der maximalen Breite
         int cols = lines.stream().mapToInt(String::length).max().orElse(0);
 
         Grid<Field> grid = new Grid<>(rows, cols);
@@ -24,12 +25,13 @@ public class LevelLoader {
                 char ch = (c < line.length()) ? line.charAt(c) : ' ';
                 Field f = new Field(r, c);
 
-                // WICHTIG: Bei entities.GameObject ist x=Spalte (c) und y=Zeile (r)
-                // Wir übergeben also (c, r) statt (r, c)!
-
+                // Mapping der Zeichen zu Spielobjekten
+                // WICHTIG: Koordinatensystem beachten!
+                // Grid nutzt [row][col] (y, x), Entities nutzen (x, y).
+                // Daher übergeben wir hier c als x und r als y.
                 switch (ch) {
                     case '#':
-                        Wall w = new Wall(c, r); // x=c, y=r
+                        Wall w = new Wall(c, r);
                         f.setPassable(false);
                         f.setContent(w);
                         em.add(w);
@@ -48,7 +50,6 @@ public class LevelLoader {
                         break;
 
                     case 'P':
-                        // entities.Player braucht das world.Grid für Kollisionen!
                         Player pl = new Player(c, r, grid);
                         f.setContent(pl);
                         em.setPlayer(pl);

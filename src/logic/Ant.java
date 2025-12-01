@@ -6,10 +6,16 @@ import world.GameGrid;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implementierung des "Ameisen"-Algorithmus.
+ * Jede Ameise ist ein eigener Thread, der rekursiv neue Ameisen für neue Pfade startet.
+ * Dient der Berechnung der Distanzkarte (Flood Fill).
+ */
 public class Ant implements Runnable {
     private int x, y, steps;
     private GameGrid<Field> grid;
-    private int[][] memory; // Hier merken wir uns die Schritte
+    // Geteilter Speicher für das Schritt-Gedächtnis (Shared Memory)
+    private int[][] memory;
 
     public Ant(int x, int y, int steps, GameGrid<Field> grid, int[][] memory) {
         this.x = x;
@@ -21,12 +27,7 @@ public class Ant implements Runnable {
 
     @Override
     public void run() {
-        // 1. Nachbarn prüfen (Oben, Rechts, Unten, Links)
-        // int[][] directions = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}}; // dx, dy
-        // ACHTUNG: In deinem world.Grid ist y=Zeile(r), x=Spalte(c).
-        // Wir probieren alle 4 Richtungen.
         int[][] directions = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
-
         List<Thread> children = new ArrayList<>();
         boolean firstWayTaken = false;
 
@@ -34,35 +35,29 @@ public class Ant implements Runnable {
             int nextX = x + dir[0];
             int nextY = y + dir[1];
 
-            // Ist der Nachbar begehbar?
-            if (grid.isWalkable(nextY, nextX)) { // Zeile (y), Spalte (x)
-
-                // Synchronisierter Zugriff auf das Gedächtnis
+            if (grid.isWalkable(nextY, nextX)) {
+                // Zugriff auf shared memory synchronisieren
                 synchronized (memory) {
-                    // Ist das Feld noch leer (0) oder haben wir einen kürzeren Weg gefunden?
-                    int currentVal = memory[nextY][nextX]; // row, col
+                    int currentVal = memory[nextY][nextX];
+                    // Prüfen: War hier noch niemand oder haben wir einen kürzeren Weg gefunden?
                     if (currentVal == 0 || currentVal > steps + 1) {
 
-                        memory[nextY][nextX] = steps + 1; // Markieren!
+                        memory[nextY][nextX] = steps + 1;
 
-                        // Wenn es der erste Weg ist, gehen wir ihn selbst (Rekursion optimiert)
+                        // Optimierung: Ersten Weg im aktuellen Thread gehen,
+                        // für weitere Abzweigungen neue Threads starten.
                         if (!firstWayTaken) {
-                            // Wir bewegen "uns selbst" auf das neue Feld
-                            // Trick: Wir starten KEINEN Thread, sondern machen direkt weiter
-                            // Aber um den Code simpel zu halten und die Aufgabe "neue Threads" zu erfüllen:
-                            // Wir starten hier der Einfachheit halber immer Threads für Verzweigungen.
-
                             Thread t = new Thread(new Ant(nextX, nextY, steps + 1, grid, memory));
                             t.start();
                             children.add(t);
-                            // firstWayTaken = true; // Falls man Optimierung will
                         }
                     }
                 }
             }
         }
 
-        // Auf alle Kinder warten ("join"), damit wir wissen, wann ALLES fertig ist
+        // Warten auf Beendigung aller Kind-Threads (Join),
+        // damit der Algorithmus erst endet, wenn alles erforscht ist.
         for (Thread t : children) {
             try {
                 t.join();

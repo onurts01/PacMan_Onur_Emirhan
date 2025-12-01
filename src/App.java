@@ -12,33 +12,32 @@ import java.awt.event.*;
 import java.io.IOException;
 
 /**
- * Die Hauptklasse der Anwendung (Controller).
- * Hier laufen alle Fäden zusammen: GUI-Setup, Thread-Start und der Game-Loop.
+ * Haupteinstiegspunkt der Anwendung.
+ * Initialisiert das Model (Entities, Grid), die View (GamePanel) und startet den Game-Controller (Timer).
  */
 public class App {
     public static void main(String[] args) throws IOException {
 
-        // --- 1. INITIALISIERUNG (Datenmodell & View) ---
+        // --- Setup & Initialisierung ---
         EntityManager em = new EntityManager();
-        // LevelLoader nutzt Generics: Grid<Field> (Anforderung 3: Generics)
+        // Laden des Levels aus der Textdatei. Wir nutzen hier ein generisches Grid für Flexibilität.
         Grid<Field> grid = LevelLoader.load("src/level1.txt", em);
         GamePanel gamePanel = new GamePanel(grid, em);
 
-        // --- 2. SERIALISIERUNG (Anforderung 4) ---
-        // Lädt den gespeicherten Highscore beim Start von der Festplatte.
+        // Highscore laden (Serialisierungstest)
         int currentHighscore = loadHighscore();
 
-        // --- 3. GUI SETUP (Anforderung 7: Swing) ---
+        // --- GUI Aufbau (Swing) ---
         JPanel hudPanel = new JPanel();
         hudPanel.setBackground(Color.BLACK);
-        hudPanel.setLayout(new GridLayout(1, 4)); // Grid-Layout für saubere Anordnung
+        hudPanel.setLayout(new GridLayout(1, 4));
 
         JLabel scoreLabel = new JLabel("Score: 0");
         JLabel timeLabel = new JLabel("Time: 0s");
         JLabel livesLabel = new JLabel("Lives: 3");
         JLabel highscoreLabel = new JLabel("Highscore: " + currentHighscore);
 
-        // Styling der Labels
+        // Einheitliches Styling für das HUD
         Font hudFont = new Font("Arial", Font.BOLD, 18);
         styleLabel(scoreLabel, hudFont);
         styleLabel(timeLabel, hudFont);
@@ -57,59 +56,59 @@ public class App {
         frame.add(hudPanel, BorderLayout.NORTH);
         frame.add(gamePanel, BorderLayout.CENTER);
 
-        frame.pack(); // Passt Fenstergröße an Inhalt an
-        frame.setLocationRelativeTo(null); // Zentriert das Fenster
+        frame.pack();
+        frame.setLocationRelativeTo(null); // Fenster zentrieren
         frame.setVisible(true);
 
-        // Fokus auf das Panel setzen, damit KeyBindings funktionieren
+        // Fokus auf das Panel zwingen, damit KeyBindings sofort greifen
         gamePanel.requestFocusInWindow();
         setupInput(gamePanel, em);
 
-        // --- 4. MULTITHREADING START (Anforderung 5.2) ---
-        // Startet für jeden Geist einen eigenen, parallelen Thread.
+        // --- Threading Start ---
+        // Geister laufen autonom in eigenen Threads
         for (Ghost g : em.getGhosts()) {
             g.start();
         }
 
         long startTime = System.currentTimeMillis();
 
-        // --- 5. GAME LOOP (Anforderung 5.1) ---
-        // Der Timer sorgt für periodische Updates (alle 40ms = 25 FPS).
-        // Dies trennt die Spielgeschwindigkeit von der Rechenleistung.
+        // --- Main Game Loop ---
+        // Wir nutzen einen Swing-Timer statt einer while-Schleife im Main-Thread,
+        // damit die GUI nicht einfriert und wir eine konstante Tick-Rate (ca. 25 FPS) haben.
         Timer timer = new Timer(40, e -> {
             Player p = em.getPlayer();
 
             if (p != null) {
-                // A) Update: Bewegungslogik des Spielers
+                // 1. Logik-Update (Bewegung, PowerUps prüfen)
                 p.update();
 
-                // B) Kollisionsabfrage: Spieler vs. Geister
+                // 2. Kollisionserkennung
                 for (Ghost g : em.getGhosts()) {
-                    // Einfache AABB-Kollision (Axis-Aligned Bounding Box) auf Rasterebene
+                    // Simple Raster-Kollision
                     if (g.getX() == p.getX() && g.getY() == p.getY()) {
                         if (p.isInvincible()) {
-                            // Szenario: PowerUp aktiv -> Geist wird gefressen
+                            // Spieler frisst Geist
                             p.addScore(100);
                             g.resetPosition();
                         } else {
-                            // Szenario: Normal -> Spieler verliert Leben
+                            // Geist frisst Spieler
                             p.loseLife();
                             p.resetPosition();
                         }
                     }
                 }
 
-                // C) UI-Updates
+                // 3. UI Sync
                 scoreLabel.setText("Score: " + p.getScore());
                 livesLabel.setText("Lives: " + p.getLives());
                 long playedSeconds = (System.currentTimeMillis() - startTime) / 1000;
                 timeLabel.setText("Time: " + playedSeconds + "s");
 
-                // D) Game Over Logik
+                // 4. Game Over Condition
                 if (p.getLives() <= 0) {
-                    ((Timer)e.getSource()).stop(); // Loop stoppen
+                    ((Timer)e.getSource()).stop(); // Loop anhalten
 
-                    // Highscore speichern, falls neuer Rekord (Serialisierung)
+                    // Highscore persistieren, falls neuer Rekord
                     if (p.getScore() > loadHighscore()) {
                         saveHighscore(p.getScore());
                     }
@@ -118,14 +117,12 @@ public class App {
                     System.exit(0);
                 }
             }
-            // Zeichnet das Spielfeld neu (ruft paintComponent auf)
+            // Repaint stößt paintComponent im GamePanel an
             gamePanel.repaint();
         });
 
         timer.start();
     }
-
-    // --- HILFSMETHODEN ---
 
     private static void styleLabel(JLabel label, Font font) {
         label.setForeground(Color.WHITE);
@@ -134,8 +131,8 @@ public class App {
     }
 
     /**
-     * Richtet die Tastatursteuerung mittels KeyBindings ein.
-     * KeyBindings sind robuster als KeyListener (Swing Standard).
+     * Setzt die Steuerung mittels KeyBindings auf.
+     * KeyBindings sind robuster als KeyListener, da sie keine Fokus-Probleme haben.
      */
     private static void setupInput(JComponent comp, EntityManager em) {
         InputMap im = comp.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
@@ -154,9 +151,7 @@ public class App {
         am.put("down", new AbstractAction() { public void actionPerformed(ActionEvent e) { if(em.getPlayer()!=null) em.getPlayer().setDirection(0, 1); }});
     }
 
-    /**
-     * Speichert den Highscore mittels ObjectOutputStream (Serialisierung).
-     */
+    // Speichert einfachen Integer-Wert via Serialisierung
     private static void saveHighscore(int score) {
         try (java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(new java.io.FileOutputStream("highscore.dat"))) {
             out.writeInt(score);
@@ -165,14 +160,11 @@ public class App {
         }
     }
 
-    /**
-     * Lädt den Highscore mittels ObjectInputStream (Deserialisierung).
-     */
     private static int loadHighscore() {
         try (java.io.ObjectInputStream in = new java.io.ObjectInputStream(new java.io.FileInputStream("highscore.dat"))) {
             return in.readInt();
         } catch (java.io.IOException e) {
-            return 0; // Fallback, falls noch kein Savegame existiert
+            return 0; // Standardwert, falls keine Datei existiert
         }
     }
 }

@@ -1,7 +1,10 @@
 package entities;
 
 import java.awt.*;
-
+/**
+ * Ein spezielles Item, das den Spieler kurzzeitig unverwundbar macht (+50 Score).
+ * Wird durch 'o' im Level-File repräsentiert.
+ */
 public class PowerUp extends GameObject {
     public PowerUp(int row, int col) {
         super(row, col);

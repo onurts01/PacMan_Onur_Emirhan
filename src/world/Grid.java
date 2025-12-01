@@ -2,10 +2,13 @@ package world;
 
 import entities.Wall;
 
-// Auch hier: "extends entities.GameObject" wegnehmen!
+/**
+ * Konkrete Implementierung des generischen Grids.
+ * Speichert Objekte vom Typ T in einem 2D-Array.
+ */
 public class Grid<T> implements GameGrid<T> {
     private final int rows, cols;
-    private final Object[][] cells; // Hier speichern wir die Objekte
+    private final Object[][] cells; // Interne Speicherung als Object-Array (Java Generics Limitation)
 
     public Grid(int rows, int cols) {
         this.rows = rows;
@@ -24,6 +27,7 @@ public class Grid<T> implements GameGrid<T> {
     @Override
     public T get(int row, int col) {
         if (!inBounds(row, col)) return null;
+        // Sicherer Cast, da wir über set() nur T zulassen
         return (T) cells[row][col];
     }
 
@@ -36,13 +40,17 @@ public class Grid<T> implements GameGrid<T> {
     public int getRows() { return rows; }
     public int getCols() { return cols; }
 
+    /**
+     * Prüft, ob ein Feld begehbar ist.
+     * Nutzt 'instanceof', um Wände zu identifizieren.
+     */
     @Override
     public boolean isWalkable(int row, int col) {
         if (!inBounds(row, col)) return false;
 
         Object obj = cells[row][col];
 
-        // Wenn das world.Grid "Fields" enthält (was dein world.LevelLoader macht):
+        // Spezialbehandlung für Field-Objekte
         if (obj instanceof Field) {
             Field f = (Field) obj;
             // Ein Feld ist begehbar, wenn es 'passable' ist UND keine Wand enthält
@@ -50,7 +58,7 @@ public class Grid<T> implements GameGrid<T> {
             return f.isPassable() && !isWall;
         }
 
-        // Fallback, falls wir doch mal direkt GameObjects speichern
+        // Fallback für direkte Objekt-Speicherung
         if (obj instanceof Wall) return false;
 
         return true;

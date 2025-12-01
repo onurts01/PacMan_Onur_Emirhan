@@ -10,15 +10,18 @@ public class Player extends GameObject {
 
     private GameGrid<Field> grid;
 
+    // Movement Timing
     private int currentDx = 0;
     private int currentDy = 0;
     private long lastMoveTime = 0;
-    private int moveDelay = 200;
+    private int moveDelay = 200; // 5 Schritte pro Sekunde
 
+    // Stats
     private int score = 0;
     private int lives = 3;
     private int startX, startY;
 
+    // State
     private boolean isPoweredUp = false;
     private long powerUpEndTime = 0;
 
@@ -36,11 +39,13 @@ public class Player extends GameObject {
 
     @Override
     public void update() {
+        // Status-Check: PowerUp abgelaufen?
         if (isPoweredUp && System.currentTimeMillis() > powerUpEndTime) {
             isPoweredUp = false;
-            System.out.println("entities.PowerUp abgelaufen!");
+            System.out.println("PowerUp Mode ended.");
         }
 
+        // Bewegung basierend auf Zeit (nicht Frame-Rate)
         if (System.currentTimeMillis() - lastMoveTime > moveDelay) {
             if (currentDx != 0 || currentDy != 0) {
                 tryMove(currentDx, currentDy);
@@ -49,34 +54,36 @@ public class Player extends GameObject {
         }
     }
 
+    /**
+     * Führt die Bewegung aus und behandelt Interaktionen (Items, Wände).
+     * Wirft intern InvalidMoveException bei Wand-Kollision.
+     */
     private void tryMove(int dx, int dy) {
         int newX = this.x + dx;
         int newY = this.y + dy;
 
         try {
-            // 1. Exception-Check: Ist das eine Wand?
+            // Prüfung auf Wand -> Exception werfen (Anforderung)
             if (!grid.isWalkable(newY, newX)) {
-                // Wenn wir hier werfen, springt er sofort zum catch-Block unten
-                // und führt KEINE Bewegung aus.
-                throw new InvalidMoveException("Wand!");
+                throw new InvalidMoveException("Blocked path at " + newX + "|" + newY);
             }
 
             Field nextField = grid.get(newY, newX);
             GameObject content = nextField.getContent();
 
-            // 2. entities.Teleporter Logik
+            // Teleporter-Logik: Wrap-around movement
             if (content instanceof Teleporter) {
                 if (newX == 0) {
                     newX = grid.getWidth() - 2;
                 } else {
                     newX = 1;
                 }
-                // Nach Teleport müssen wir das neue Zielfeld holen
+                // Zielfeld nach Teleport aktualisieren
                 nextField = grid.get(newY, newX);
                 content = nextField.getContent();
             }
 
-            // 3. Punkte essen
+            // Item-Interaktionen
             if (content instanceof Dot) {
                 score += 10;
             } else if (content instanceof PowerUp) {
@@ -84,22 +91,22 @@ public class Player extends GameObject {
                 activatePowerUp();
             }
 
-            // 4. Bewegung ausführen
+            // Grid-Update
             grid.get(this.y, this.x).setContent(null); // Alten Platz leeren
             this.x = newX;
             this.y = newY;
-            nextField.setContent(this);   // Neuen Platz besetzen
+            nextField.setContent(this); // Neuen Platz belegen
 
         } catch (InvalidMoveException e) {
-            // Wir fangen den Fehler ab und tun nichts (Pacman bleibt einfach stehen)
-            // System.out.println(e.getMessage()); // Optional: Konsolenausgabe
+            // Exception wird gefangen und ignoriert -> Spieler bleibt einfach stehen
+            // System.out.println(e.getMessage());
         }
     }
 
     private void activatePowerUp() {
         isPoweredUp = true;
-        powerUpEndTime = System.currentTimeMillis() + 10000;
-        System.out.println("POWERUP! Geister essbar!");
+        powerUpEndTime = System.currentTimeMillis() + 10000; // 10 Sek. Unverwundbarkeit
+        System.out.println("POWERUP ACTIVE!");
     }
 
     public boolean isInvincible() { return isPoweredUp; }
@@ -124,7 +131,7 @@ public class Player extends GameObject {
     @Override
     public void draw(Graphics g, int x, int y, int size) {
         if (isPoweredUp) {
-            g.setColor(Color.RED);
+            g.setColor(Color.RED); // Visuelles Feedback für PowerUp
         } else {
             g.setColor(Color.YELLOW);
         }
